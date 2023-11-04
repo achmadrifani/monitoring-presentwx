@@ -1,0 +1,6 @@
+streamlit
+altair
+pandas
+datetime
+json
+ftplib
