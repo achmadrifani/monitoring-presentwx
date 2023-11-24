@@ -57,6 +57,16 @@ def get_log_file(log_file):
 
     return file_content
 
+def highlight_done(s):
+    styles = []
+    for value in s:
+        if value == 'done':
+            styles.append('background-color: lightblue')
+        elif value == 'failed':
+            styles.append('background-color: lightcoral')
+        else:
+            styles.append('')
+    return styles
 
 def get_file(date):
     ftp = FTP(FTP_CONFIG["host"])
@@ -74,32 +84,50 @@ def get_file(date):
 
     df = pd.json_normalize(data)
     df = df.rename(columns={"task_duration.start": "start", "task_duration.duration": "duration",
-                            "task_duration.radar_time":"radar_time",
+                            "task_duration.radar_time":"radar_time UTC",
+                            "task_duration.sat_time": "sat_time UTC",
                             "task_duration.status":"status",
-                            "task_duration.error_msg":"error_message"})
+                            "task_duration.error_msg":"error_msg"})
 
     # Mengganti format string kolom "start" menjadi objek datetime
     df['start'] = pd.to_datetime(df['start'])
+    df['radar_time UTC'] = pd.to_datetime((df['radar_time UTC'])).dt.strftime("%H:%M")
+    df['sat_time UTC'] = pd.to_datetime((df['sat_time UTC'])).dt.strftime("%H:%M")
+
 
     # Mengganti format string kolom "duration" menjadi objek timedelta
     df['duration'] = df['duration'].apply(lambda x: pd.to_timedelta(x))
     df['duration'] = (df['duration'].dt.total_seconds() / 60).round(1)
 
-    return df
+    df['end'] = df['start'] + pd.to_timedelta(df['duration'], unit='m')
+    df['start'] = df['start'].dt.strftime("%H:%M")
+    df['end'] = df['end'].dt.strftime("%H:%M")
+    df = df[['start','end','duration','status','radar_time UTC','sat_time UTC','error_msg']]
+    df = df.sort_values(by='start', ascending=True)
+    df_style = df.style.apply(highlight_done, subset=['status'])
+    return df, df_style
 
 def make_bar_plot(df):
-    bars = alt.Chart(df).mark_bar().encode(
-        x=alt.X('start:T', axis=alt.Axis(title='Start Time', format='%H:%M')),
+    bars = alt.Chart(df.reset_index()).mark_bar().encode(
+        x=alt.X('index:N', axis=alt.Axis(title='Task Number')),
         y=alt.Y('duration:Q', axis=alt.Axis(title='Duration (mins)')),
         color=alt.Color('status:N', scale=alt.Scale(domain=['failed', 'done'], range=['red', 'blue']),
                         legend=alt.Legend(title='Status')),
-        tooltip=[alt.Tooltip('start:T', title='Start', format='%H:%M'), 'duration:Q', 'status:N', 'error_message:N']
+        tooltip=[alt.Tooltip('start:N', title='Start'), 'duration:Q', 'status:N', 'error_message:N']
     ).properties(
         width=650,
         height=300
     )
 
     return bars
+
+
+def calculate_metrics(df):
+    total_data = len(df)
+    done_count = df['status'].value_counts().get('done', 0)
+    fail_count = df['status'].value_counts().get('failed', 0)
+    pdone = (done_count / total_data) * 100 if total_data > 0 else 0
+    return total_data,done_count,fail_count,pdone
 
 
 st.header("Monitoring Present Weather Run")
@@ -109,10 +137,16 @@ col1,col2 = st.columns(2)
 with col1:
     date_select = st.selectbox('Tanggal',retrieve_file_dates(),index=None, placeholder="Pilih Tanggal ...")
     if date_select is not None:
-        df = get_file(date_select)
+        df, df_style = get_file(date_select)
         bars = make_bar_plot(df)
+        total_data, done_count, fail_count, pdone = calculate_metrics(df)
+        col11,col12,col13,col14 = st.columns(4)
+        col11.metric("Total Task", total_data)
+        col12.metric("Done", done_count)
+        col13.metric("Failed", fail_count)
+        col14.metric("% Done", value=f"{pdone.round(1)}%")
         st.write(bars)
-        st.dataframe(df,use_container_width=True)
+        st.dataframe(df_style,use_container_width=True)
 
 with col2:
     log_select = st.selectbox("File Log Terakhir", retrieve_logs_list(),index=None, placeholder="Pilih Log ...")
