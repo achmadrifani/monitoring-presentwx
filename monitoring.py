@@ -23,6 +23,22 @@ def retrieve_file_dates():
         date_list.append(date)
     return date_list
 
+
+def retrieve_prov_list():
+    ftp = FTP(FTP_CONFIG["host"])
+    ftp.login(FTP_CONFIG["username"], FTP_CONFIG["password"])
+    ftp.cwd("data/eval")
+    file_list = []
+    prov_list = []
+    search_pattern = "eval-presentweather-*.csv"
+    ftp.retrlines(f"LIST {search_pattern}", file_list.append)
+    for file in file_list:
+        prov_part = file.split("-")[8]
+        prov = prov_part.split(".")[0]
+        prov_list.append(prov)
+    return prov_list
+
+
 def retrieve_logs_list():
     ftp = FTP(FTP_CONFIG["host"])
     ftp.login(FTP_CONFIG["username"], FTP_CONFIG["password"])
@@ -122,6 +138,25 @@ def make_bar_plot(df):
     return bars
 
 
+def get_prov_df(prov):
+    ftp = FTP(FTP_CONFIG["host"])
+    ftp.login(FTP_CONFIG["username"], FTP_CONFIG["password"])
+    ftp.cwd("data/eval")
+    file_name = f"eval-presentweather-{prov}.csv"
+
+    with open(f"{prov}.csv", 'wb') as local_file:
+        ftp.retrbinary('RETR ' + file_name, local_file.write)
+
+    df = pd.read_csv(f"{prov}.csv",sep=";")
+    try:
+        df = df[["AREA_ID","DATE","KEC","WEATHER","CMAX","LDN"]]
+    except KeyError:
+        try:
+            df = df[["AREA_ID", "DATE", "KEC", "WEATHER", "RR"]]
+        except KeyError:
+            return df
+    return df
+
 def calculate_metrics(df):
     total_data = len(df)
     done_count = df['status'].value_counts().get('done', 0)
@@ -132,24 +167,36 @@ def calculate_metrics(df):
 
 st.header("Monitoring Present Weather Run")
 
-col1,col2 = st.columns(2)
 
-with col1:
-    date_select = st.selectbox('Tanggal',retrieve_file_dates(),index=None, placeholder="Pilih Tanggal ...")
-    if date_select is not None:
-        df, df_style = get_file(date_select)
-        bars = make_bar_plot(df)
-        total_data, done_count, fail_count, pdone = calculate_metrics(df)
-        col11,col12,col13,col14 = st.columns(4)
-        col11.metric("Total Task", total_data)
-        col12.metric("Done", done_count)
-        col13.metric("Failed", fail_count)
-        col14.metric("% Done", value=f"{pdone.round(1)}%")
-        st.write(bars)
-        st.dataframe(df_style,use_container_width=True)
+tab1,tab2 = st.tabs(["Run Monitor","Data Monitor"])
 
-with col2:
-    log_select = st.selectbox("File Log Terakhir", retrieve_logs_list(),index=None, placeholder="Pilih Log ...")
-    if log_select is not None:
-        log_content = get_log_file(log_select)
-        st.text_area("LOGS",log_content, height=700)
+with tab1:
+    col1, col2 = st.columns(2)
+    with col1:
+        date_select = st.selectbox('Tanggal',retrieve_file_dates(),index=None, placeholder="Pilih Tanggal ...")
+        if date_select is not None:
+            df, df_style = get_file(date_select)
+            bars = make_bar_plot(df)
+            total_data, done_count, fail_count, pdone = calculate_metrics(df)
+            col11,col12,col13,col14 = st.columns(4)
+            col11.metric("Total Task", total_data)
+            col12.metric("Done", done_count)
+            col13.metric("Failed", fail_count)
+            col14.metric("% Done", value=f"{pdone.round(1)}%")
+            st.write(bars)
+            st.dataframe(df_style,use_container_width=True)
+
+    with col2:
+        log_select = st.selectbox("File Log Terakhir", retrieve_logs_list(), index=None, placeholder="Pilih Log ...")
+        if log_select is not None:
+            log_content = get_log_file(log_select)
+            st.text_area("LOGS", log_content, height=700)
+
+with tab2:
+    col3,col4 = st.columns([0.2,0.8])
+    with col3:
+        prov_select = st.selectbox('Evaluasi Present Wx', retrieve_prov_list(), index=None, placeholder="Pilih Provinsi ...")
+    with col4:
+        if prov_select is not None:
+            df_eval = get_prov_df(prov_select)
+            st.dataframe(df_eval)
