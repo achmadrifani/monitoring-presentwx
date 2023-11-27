@@ -1,0 +1,11 @@
+[Unit]
+Description=Streamlit Amandemen Forecast Monitoring
+
+[Service]
+Type=simple
+WorkingDirectory=/sites/amfoc-streamlit
+ExecStart=/bin/bash /sites/amfoc-streamlit/run.amfoc-streamlit.sh
+
+[Install]
+WantedBy=multi-user.target
+
