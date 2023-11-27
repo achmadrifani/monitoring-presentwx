@@ -108,7 +108,10 @@ def get_file(date):
     # Mengganti format string kolom "start" menjadi objek datetime
     df['start'] = pd.to_datetime(df['start'])
     df['radar_time UTC'] = pd.to_datetime((df['radar_time UTC'])).dt.strftime("%H:%M")
-    df['sat_time UTC'] = pd.to_datetime((df['sat_time UTC'])).dt.strftime("%H:%M")
+    try:
+        df['sat_time UTC'] = pd.to_datetime((df['sat_time UTC'])).dt.strftime("%H:%M")
+    except KeyError:
+        pass
 
 
     # Mengganti format string kolom "duration" menjadi objek timedelta
@@ -118,7 +121,10 @@ def get_file(date):
     df['end'] = df['start'] + pd.to_timedelta(df['duration'], unit='m')
     df['start'] = df['start'].dt.strftime("%H:%M")
     df['end'] = df['end'].dt.strftime("%H:%M")
-    df = df[['start','end','duration','status','radar_time UTC','sat_time UTC','error_msg']]
+    try:
+        df = df[['start','end','duration','status','radar_time UTC','sat_time UTC','error_msg']]
+    except KeyError:
+        df = df[['start', 'end', 'duration', 'status', 'radar_time UTC']]
     df = df.sort_values(by='start', ascending=True)
     df_style = df.style.apply(highlight_done, subset=['status'])
     return df, df_style
@@ -200,3 +206,4 @@ with tab2:
         if prov_select is not None:
             df_eval = get_prov_df(prov_select)
             st.dataframe(df_eval)
+
