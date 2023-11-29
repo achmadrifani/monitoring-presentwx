@@ -188,7 +188,7 @@ with tab1:
             col11.metric("Total Task", total_data)
             col12.metric("Done", done_count)
             col13.metric("Failed", fail_count)
-            col14.metric("% Done", value=f"{pdone.round(1)}%")
+            col14.metric("% Done", value=f"{round(pdone,1}%")
             st.write(bars)
             st.dataframe(df_style,use_container_width=True)
 
