@@ -21,7 +21,7 @@ def retrieve_file_dates():
         date_part = file.split("_")[3]
         date = datetime.strptime(date_part,"%Y%m%d.json")
         date_list.append(date)
-    return date_list
+    return date_list[-7:]
 
 
 def retrieve_prov_list():
