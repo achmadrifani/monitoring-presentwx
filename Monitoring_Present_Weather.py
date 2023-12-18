@@ -137,7 +137,6 @@ def make_bar_plot(df):
         width=650,
         height=300
     )
-
     return bars
 
 
