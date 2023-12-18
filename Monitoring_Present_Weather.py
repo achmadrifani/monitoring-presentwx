@@ -55,11 +55,8 @@ def retrieve_logs_list():
 
     # Urutkan daftar berdasarkan mtime
     file_mtime_list.sort(key=lambda x: x[1], reverse=True)
-
     # Ambil 10 file terakhir
     last_10_files = [file for file, mtime in file_mtime_list[:10]]
-
-
     return last_10_files
 
 def get_log_file(log_file):
