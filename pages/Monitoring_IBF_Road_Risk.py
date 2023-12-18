@@ -57,19 +57,46 @@ def process_file_info(file_info):
 
     return {"filename": filename, "modified_time": modified_time}
 
+def initialize_date():
+    if 7 < datetime.utcnow().hour <= 18:
+        init_time = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    elif datetime.utcnow().hour in [0, 1, 2, 3, 4, 5, 6, 7]:
+        init_time = (datetime.utcnow() - timedelta(days=1)).replace(hour=12, minute=0, second=0,
+                                                                            microsecond=0)
+    else:
+        init_time_default = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+    return init_time
+
+def highlight_status(s):
+    styles = []
+    for value in s:
+        if value == 'Updated':
+            styles.append('background-color: lightblue')
+        elif value == 'Not Updated':
+            styles.append('background-color: lightcoral')
+        else:
+            styles.append('')
+    return styles
+
 file_info_list = list_files_ftp(FTP_CONFIG)
+init_time = initialize_date()
 df_flist = pd.DataFrame(file_info_list)
 df_flist["modified_time"] = df_flist["modified_time"].dt.strftime("%d %b %H:%M:%S LT")
 
 df_stat = get_status_file(FTP_CONFIG)
 df_stat = df_stat.merge(df_flist, left_index=True, right_on="filename")
+df_stat["Status"] = df_stat["initTime"].apply(lambda x: "Updated" if x == init_time else "Not Updated")
+
 df_stat.rename(columns={"filename":"File Name",
                         "modified_time":"Last Modified",
                         "initTime":"Initial Time",
                         "validTime":"Valid Time",
                         "leadTime":"Lead Time (+hrs)"}, inplace=True)
-df_stat = df_stat[["File Name","Last Modified","Initial Time","Valid Time","Lead Time (+hrs)"]]
+
+df_stat = df_stat[["File Name","Status","Last Modified","Initial Time","Valid Time","Lead Time (+hrs)"]]
+df_stat = df_stat.style.apply(lambda x:highlight_status(x), subset=['Status'])
 
 st.title("Monitoring IBF Road Risk")
 st.header("FTP File List")
+st.write(f"Standard Initial Time : {init_time}")
 st.dataframe(df_stat,use_container_width=True)
