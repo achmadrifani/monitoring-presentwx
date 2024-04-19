@@ -1,3 +1,10 @@
 streamlit
+streamlit-folium
 altair
 pandas
+numpy
+rioxarray
+rasterio
+cartopy
+matplotlib
+
