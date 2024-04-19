@@ -1,5 +1,7 @@
 import streamlit as st
-# from streamlit_folium import st_folium
+from streamlit_folium import st_folium
+import geopandas as gpd
+import folium
 import pandas as pd
 import altair as alt
 from ftplib import FTP
@@ -140,6 +142,7 @@ def make_bar_plot(df):
     return bars
 
 
+@st.cache_data
 def get_prov_df(prov):
     ftp = FTP(FTP_CONFIG["host"])
     ftp.login(FTP_CONFIG["username"], FTP_CONFIG["password"])
@@ -151,10 +154,10 @@ def get_prov_df(prov):
 
     df = pd.read_csv(f"{prov}.csv",sep=";")
     try:
-        df = df[["AREA_ID","DATE","KEC","WEATHER","CMAX","LDN"]]
+        df = df[["AREA_ID","DATE","KEC","WEATHER","CMAX","LDN","LAT","LON","RR"]]
     except KeyError:
         try:
-            df = df[["AREA_ID", "DATE", "KEC", "WEATHER", "RR"]]
+            df = df[["AREA_ID", "DATE", "KEC", "WEATHER", "RR", "LAT", "LON"]]
         except KeyError:
             return df
     return df
@@ -201,5 +204,4 @@ with tab2:
     with col4:
         if prov_select is not None:
             df_eval = get_prov_df(prov_select)
-            st.dataframe(df_eval)
-
+            st.dataframe(df_eval,use_container_width=True)

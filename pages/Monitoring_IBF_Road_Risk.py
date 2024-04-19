@@ -84,7 +84,7 @@ df_flist = pd.DataFrame(file_info_list)
 df_flist["modified_time"] = df_flist["modified_time"].dt.strftime("%d %b %H:%M:%S LT")
 
 df_stat = get_status_file(FTP_CONFIG)
-df_stat = df_stat.merge(df_flist, left_index=True, right_on="filename")
+df_stat = df_stat.merge(df_flist, left_index=True, right_on="filename", how="outer")
 df_stat["Status"] = df_stat["initTime"].apply(lambda x: "Updated" if x == init_time else "Not Updated")
 
 df_stat.rename(columns={"filename":"File Name",
