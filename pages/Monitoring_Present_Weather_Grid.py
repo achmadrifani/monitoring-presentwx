@@ -59,7 +59,7 @@ def get_latest_radar():
 
         ax.set_axis_off()
         png_file = "radar.png"
-        plt.savefig(png_file, bbox_inches='tight', pad_inches=0, dpi=600)
+        plt.savefig(png_file, bbox_inches='tight', pad_inches=0, dpi=600, transparent=True)
 
         filename = response.json()["file"].split("/")[4]
         time_str = filename[13:25]
@@ -81,7 +81,7 @@ def make_png(tif_file):
     ax.imshow(ds.data[0], extent=(ds.x.min(), ds.x.max(), ds.y.min(), ds.y.max()), origin='upper', cmap=cmap)
     ax.set_axis_off()
     png_file = "pwx.png"
-    plt.savefig(png_file, bbox_inches='tight', pad_inches=0, dpi=600)
+    plt.savefig(png_file, bbox_inches='tight', pad_inches=0, dpi=600, transparent=True)
     return png_file
 
 
