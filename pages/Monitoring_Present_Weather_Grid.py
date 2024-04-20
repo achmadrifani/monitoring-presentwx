@@ -48,10 +48,15 @@ def get_latest_radar():
         with rasterio.open(response.json()['file']) as src:
             radar_data = rioxarray.open_rasterio(src)
 
-        fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw={'projection': ccrs.PlateCarree()})
-        ax.imshow(radar_data.data[0],
-                  extent=(radar_data.x.min(), radar_data.x.max(), radar_data.y.min(), radar_data.y.max()),
-                  origin='upper', cmap="viridis", vmin=0, vmax=100)
+        levels = [0.1, 1, 2, 5, 7, 9, 10, 12, 15, 20, 50, 100]
+        colors = ["#4b4bd7", "#4ba0fe", "#6ed7fe", "#9ff0fe", "#fefefe", "#fef8d2", "#feec4b", "#fe9c4b", "#fe774b",
+                  "#d74b4b", "#b44b4b", "#984b4b"]
+        cmap = mcolors.LinearSegmentedColormap.from_list("mycmap", colors)
+
+        lons, lats = np.meshgrid(radar_data.x, radar_data.y)
+        fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw={'projection': ccrs.Mercator()})
+        ax.contourf(lons, lats, radar_data.data[0], levels, cmap=cmap, extend="max")
+
         ax.set_axis_off()
         png_file = "radar.png"
         plt.savefig(png_file, bbox_inches='tight', pad_inches=0, dpi=600)
@@ -72,7 +77,7 @@ def make_png(tif_file):
     colors = ["#8eb2fa", "#6597fc", "#2a70fa", "#002a7d", "#faf564", "#faa264", "#f74f4f", "#fc35f2", "#fc35f2"]
     cmap = ListedColormap(colors)
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw={'projection': ccrs.Mercator()})
     ax.imshow(ds.data[0], extent=(ds.x.min(), ds.x.max(), ds.y.min(), ds.y.max()), origin='upper', cmap=cmap)
     ax.set_axis_off()
     png_file = "pwx.png"
